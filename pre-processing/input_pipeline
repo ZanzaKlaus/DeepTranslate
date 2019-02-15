@@ -1,0 +1,75 @@
+import collections
+import os
+import numpy as np
+import tensorflow as tf
+from gensim.models import Word2Vec
+from gensim.models import keyedvectors
+from nltk.tokenize import word_tokenize
+
+inputs = 'fr-en/europarl-v7.fr-en.en'
+labels = 'fr-en/europarl-v7.fr-en.fr'
+
+vocabulary_size = 10000
+
+x_data_source = open(inputs, 'r', encoding='utf-8')
+y_data_source = open(labels, 'r', encoding='utf-8')
+
+x_data = x_data_source.read().split('\n')
+y_data = y_data_source.read().split('\n')
+
+x_word_list = []
+y_word_list = []
+
+x_word_dictionary = []
+y_word_dictionary = []
+
+
+def load_vocab(x=x_data, y=y_data):
+
+    x = (tf.compat.as_str(x_data_source.read()).lower().split('\n'))
+    x = [x_data[_].split(' ')[::-1] for _ in range(len(x_data))]
+    y = (tf.compat.as_str(y_data_source.read()).lower().split('\n'))
+    y = [y_data[_].split(' ')[::-1] for _ in range(len(y_data))]
+
+    [x_word_list.extend(x_data[_]) for _ in range(len(x_data))]
+    [y_word_list.extend(y_data[_]) for _ in range(len(y_data))]
+
+    print(x[0:20])
+    print(y[0:20])
+
+    x_word_dictionary.extend(collections.Counter(x_word_list).most_common(vocabulary_size))
+    y_word_dictionary.extend(collections.Counter(y_word_list).most_common(vocabulary_size))
+
+    ''' index mapping '''
+
+    x_idx_to_word = [word[0] for idx, word in enumerate(x_word_dictionary)]
+    x_idx_to_word.insert(0, 'ZERO')
+    x_idx_to_word.append('UNK')
+
+    y_idx_to_word = [word[0] for idx, word in enumerate(y_word_dictionary)]
+    y_idx_to_word.insert(0, 'ZERO')
+    y_idx_to_word.append('UNK')
+
+    print(x_idx_to_word[0:2])
+
+    x_word_to_idx = {word: ix for ix, word in enumerate(x_idx_to_word)}
+    y_word_to_idx = {word: ix for ix, word in enumerate(x_idx_to_word)}
+
+    for i, sentence in enumerate(x):
+        for j, word in enumerate(sentence):
+            if word in x_word_to_idx:
+                x[i][j] = x_word_to_idx[word]
+            else:
+                x[i][j] = x_word_to_idx['UNK']
+
+    for i, sentence in enumerate(y):
+        for j, word in enumerate(sentence):
+            if word in y_word_to_idx:
+                y[i][j] = y_word_to_idx[word]
+            else:
+                y[i][j] = y_word_to_idx['UNK']
+
+    print(x[0:10])
+    print(y[0:10])
+
+    return x, y
